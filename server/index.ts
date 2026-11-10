@@ -3,7 +3,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { formatUnits, isAddress, type Address } from 'viem'
 import { claimVoucher, client } from './chain'
 import { getMarkets, getSnapshot, listMarketSummaries, loopRunning, recentReceipts, startLoop, stopLoop, tick } from './engine'
-import { adminToken, loopMs, mode, NETWORK, port, tradingAccount } from './env'
+import { adminToken, allowedOrigins, loopMs, mode, NETWORK, port, tradingAccount } from './env'
 import { getState, setState } from './store'
 import { parseConfig } from './strategy'
 
@@ -138,7 +138,23 @@ async function route(req: IncomingMessage, res: ServerResponse) {
   throw new HttpError(404, 'Not found')
 }
 
+function applyCors(req: IncomingMessage, res: ServerResponse) {
+  const origin = req.headers.origin
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('access-control-allow-origin', origin)
+    res.setHeader('vary', 'origin')
+    res.setHeader('access-control-allow-headers', 'authorization, content-type')
+    res.setHeader('access-control-allow-methods', 'GET, POST, OPTIONS')
+  }
+}
+
 const server = createServer((req, res) => {
+  applyCors(req, res)
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204)
+    res.end()
+    return
+  }
   route(req, res).catch((err: unknown) => {
     if (err instanceof HttpError) return send(res, err.status, { error: err.message })
     console.error('[melo] request failed:', err instanceof Error ? err.message : err)
@@ -147,7 +163,7 @@ const server = createServer((req, res) => {
 })
 
 server.listen(port, () => {
-  console.log(`[melo] api on :${port} (${mode} mode, loop ${loopMs / 1000}s, controls ${adminToken ? 'on' : 'off'})`)
+  console.log(`[melo] api on :${port} (${mode} mode, loop ${loopMs / 1000}s, controls ${adminToken ? 'on' : 'off'}, cors origins ${allowedOrigins.length})`)
   if (getState().enabled && mode !== 'readonly') {
     console.log('[melo] autopilot was on before restart, resuming')
     startLoop()

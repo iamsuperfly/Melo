@@ -48,7 +48,9 @@ Environment variables, set in `.env` (never commit it):
 | `BOT_PRIVATE_KEY` | Key the bot signs with. Make a fresh one just for Melo. Leave empty for read-only mode. |
 | `OWNER_ADDRESS` | Optional. The wallet you linked the bot to in the dreamDEX app. If empty, the bot trades its own account. |
 | `ADMIN_TOKEN` | Secret that unlocks the autopilot controls in the browser. |
-| `MELO_PORT` | Optional. Server port, default 8787. |
+| `PORT` / `MELO_PORT` | Optional. Server port, default 8787. Hosting platforms set `PORT` for you. |
+| `MELO_ALLOWED_ORIGIN` | Server, when the web app is on another site. Your web app URL, for example your Vercel address. Comma separate several. |
+| `VITE_API_BASE` | Web app, when deployed. The public URL of the Melo server. Leave empty for local development. |
 | `MELO_LOOP_MS` | Optional. Time between autopilot cycles in milliseconds, default 30000, minimum 10000. |
 
 Run the server and the web app in two terminals:
@@ -74,6 +76,13 @@ bun run lint        # lint
 4. Restart the server, open the terminal, paste your `ADMIN_TOKEN`, and press Start autopilot.
 
 Without `OWNER_ADDRESS`, the bot trades its own account. Fund it with gas, then use Claim paper USDso in the terminal.
+
+## Deploying
+
+Melo has two parts. The web app is static and fits on Vercel or Netlify. The server must run somewhere that stays on (Railway, Render, Fly), because autopilot is a loop that keeps running.
+
+1. Deploy the server from this repo. Build command `bun install`, start command `bun run server`. Set `BOT_PRIVATE_KEY`, `OWNER_ADDRESS`, `ADMIN_TOKEN` and `MELO_ALLOWED_ORIGIN` (your web app URL). Attach a persistent volume if you want the order log to survive redeploys.
+2. In the web app host, set `VITE_API_BASE` to the server's public URL and redeploy.
 
 ## X posts
 

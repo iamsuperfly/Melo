@@ -116,8 +116,11 @@ export class ApiError extends Error {
   }
 }
 
+/** Empty in dev (Vite proxies /api). On Vercel, set VITE_API_BASE to the server's public URL. */
+const API_BASE = ((import.meta.env.VITE_API_BASE as string | undefined) ?? '').replace(/\/+$/, '')
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, init)
+  const res = await fetch(`${API_BASE}${path}`, init)
   const body = (await res.json().catch(() => ({}))) as { error?: string }
   if (!res.ok) throw new ApiError(res.status, body.error ?? `Request failed (${res.status})`)
   return body as T

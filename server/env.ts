@@ -32,7 +32,12 @@ export const botAddress: Address | null = botKey ? privateKeyToAccount(botKey).a
 export const ownerAddress = readOwner()
 
 export const adminToken = process.env.ADMIN_TOKEN?.trim() || null
-export const port = Number(process.env.MELO_PORT ?? 8787)
+export const port = Number(process.env.PORT ?? process.env.MELO_PORT ?? 8787)
+/** Browser origins allowed to call the API cross-site, comma separated (for example your Vercel URL). */
+export const allowedOrigins = (process.env.MELO_ALLOWED_ORIGIN ?? '')
+  .split(',')
+  .map((o) => o.trim().replace(/\/+$/, ''))
+  .filter(Boolean)
 export const loopMs = Math.max(10_000, Number(process.env.MELO_LOOP_MS ?? 30_000))
 
 export const NETWORK = {

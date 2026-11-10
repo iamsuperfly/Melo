@@ -1,0 +1,90 @@
+# Melo
+
+Melo is a funding-aware perps terminal for dreamDEX on the Somnia Tokyo testnet. It watches funding rates, opens a position on the paying side, guards it against liquidation, and shows every order it places with its transaction hash.
+
+Built with [Arc Studio](https://studio.arc.io)
+
+Submitted to the dreamDEX Perps Builder Bounty, Track 2 (MVP).
+
+## What it does
+
+- Shows live mark price, funding rate and annualized funding for every tradeable perp market, sorted by the biggest funding edge.
+- Autopilot opens a position on the side that collects funding when the rate is above your entry line, and closes it when the edge fades or flips.
+- A liquidation shield trims the position, then closes it, before the exchange would liquidate it. You set both lines.
+- Tells you plainly whether the next order is Ready, a Smaller size, or Cannot execute, checked against your live margin.
+- Keeps running on the server after you close the tab.
+- A proof page re-reads your fills from the exchange indexer and marks the ones Melo placed, each with a link to its transaction.
+
+## Who it is for
+
+Traders who want a simple, observable way to run a funding-harvest strategy with a risk guard on dreamDEX testnet, and see real orders land.
+
+## Safety
+
+- The bot key can place, cancel and reduce orders for a linked wallet. It cannot withdraw or send funds.
+- The key lives only in the server's `.env`. It is never sent to the browser.
+- Autopilot controls need an admin token. Anyone can view the terminal and proof page, only the token holder can start, stop or change settings.
+- This is testnet only. Funding harvesting carries real market risk on mainnet and this project does not touch mainnet.
+
+## Tech stack
+
+- React 18, Vite, TypeScript, Tailwind CSS
+- A small Node-compatible server run with Bun
+- `@somnia-chain/markets-sdk` for market data and order placement
+- viem
+
+## Development
+
+Prerequisites: Bun.
+
+```bash
+bun install
+```
+
+Environment variables, set in `.env` (never commit it):
+
+| Name | Purpose |
+| --- | --- |
+| `BOT_PRIVATE_KEY` | Key the bot signs with. Make a fresh one just for Melo. Leave empty for read-only mode. |
+| `OWNER_ADDRESS` | Optional. The wallet you linked the bot to in the dreamDEX app. If empty, the bot trades its own account. |
+| `ADMIN_TOKEN` | Secret that unlocks the autopilot controls in the browser. |
+| `MELO_PORT` | Optional. Server port, default 8787. |
+| `MELO_LOOP_MS` | Optional. Time between autopilot cycles in milliseconds, default 30000, minimum 10000. |
+
+Run the server and the web app in two terminals:
+
+```bash
+bun run server
+bun run dev
+```
+
+Other commands:
+
+```bash
+bun run test        # strategy unit tests
+bun run typecheck   # type check
+bun run lint        # lint
+```
+
+### Setting up the bot
+
+1. Create a new key for the bot (for example with `cast wallet new`) and put it in `BOT_PRIVATE_KEY`.
+2. In the dreamDEX testnet app, choose Link a Bot, paste the bot's public address, tick Perps, and leave "Send it ... for gas" on. Put your wallet address in `OWNER_ADDRESS`.
+3. Make sure that wallet has USDso in its Perps account (the Perps Arena credit works).
+4. Restart the server, open the terminal, paste your `ADMIN_TOKEN`, and press Start autopilot.
+
+Without `OWNER_ADDRESS`, the bot trades its own account. Fund it with gas, then use Claim paper USDso in the terminal.
+
+## X posts
+
+Add 2 to 3 links to posts about Melo that tag [@DreamDEXSomnia](https://x.com/DreamDEXSomnia):
+
+1. 
+2. 
+3. 
+
+## Live order evidence
+
+Add transaction hashes of real orders Melo placed on the Tokyo testnet:
+
+- 

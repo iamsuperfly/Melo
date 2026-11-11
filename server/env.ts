@@ -50,7 +50,8 @@ export const NETWORK = {
 export type Mode = 'linked' | 'direct' | 'readonly'
 
 /** linked: bot key trades OWNER_ADDRESS. direct: bot key trades its own account. readonly: no key. */
-export const mode: Mode = botKey ? (ownerAddress ? 'linked' : 'direct') : 'readonly'
+const ownerIsOther = ownerAddress !== null && ownerAddress.toLowerCase() !== botAddress?.toLowerCase()
+export const mode: Mode = botKey ? (ownerIsOther ? 'linked' : 'direct') : 'readonly'
 
 /** The account whose margin and position the app reads. */
 export const tradingAccount: Address | null = mode === 'linked' ? ownerAddress : botAddress ?? ownerAddress

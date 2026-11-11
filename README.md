@@ -50,6 +50,8 @@ Environment variables, set in `.env` (never commit it):
 | `ADMIN_TOKEN` | Secret that unlocks the autopilot controls in the browser. |
 | `PORT` / `MELO_PORT` | Optional. Server port, default 8787. Hosting platforms set `PORT` for you. |
 | `MELO_ALLOWED_ORIGIN` | Server, when the web app is on another site. Your web app URL, for example your Vercel address. Comma separate several. |
+| `SUPABASE_URL` | Optional. Your Supabase project URL. Keeps autopilot settings and the order log across redeploys. |
+| `SUPABASE_SERVICE_KEY` | Optional, secret. The Supabase service role key. Server only, never put it in a `VITE_` variable. |
 | `VITE_API_BASE` | Web app, when deployed. The public URL of the Melo server. Leave empty for local development. |
 | `MELO_LOOP_MS` | Optional. Time between autopilot cycles in milliseconds, default 30000, minimum 10000. |
 
@@ -83,6 +85,27 @@ Melo has two parts. The web app is static and fits on Vercel or Netlify. The ser
 
 1. Deploy the server from this repo. Build command `bun install`, start command `bun run server`. Set `BOT_PRIVATE_KEY`, `OWNER_ADDRESS`, `ADMIN_TOKEN` and `MELO_ALLOWED_ORIGIN` (your web app URL). Attach a persistent volume if you want the order log to survive redeploys.
 2. In the web app host, set `VITE_API_BASE` to the server's public URL and redeploy.
+
+### Keeping data across redeploys (Supabase)
+
+Free hosts wipe local files on every redeploy. To keep autopilot settings and the order log, create a Supabase project, run this in its SQL editor, then set `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` on the server:
+
+```sql
+create table if not exists melo_state (
+  id text primary key,
+  value jsonb not null,
+  updated_at timestamptz default now()
+);
+create table if not exists melo_receipts (
+  id text primary key,
+  ts bigint not null,
+  data jsonb not null
+);
+alter table melo_state enable row level security;
+alter table melo_receipts enable row level security;
+```
+
+The same SQL is in `supabase/schema.sql`. Row level security stays on with no public policies, so only the server's service key can read or write these tables.
 
 ## X posts
 

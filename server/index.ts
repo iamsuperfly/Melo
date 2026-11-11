@@ -4,7 +4,7 @@ import { formatUnits, isAddress, type Address } from 'viem'
 import { claimVoucher, client, depositToMargin } from './chain'
 import { getMarkets, getSnapshot, listMarketSummaries, loopRunning, recentReceipts, startLoop, stopLoop, tick } from './engine'
 import { adminToken, allowedOrigins, loopMs, mode, NETWORK, port, tradingAccount } from './env'
-import { getState, setState } from './store'
+import { getState, initStore, setState } from './store'
 import { parseConfig } from './strategy'
 
 class HttpError extends Error {
@@ -174,6 +174,8 @@ const server = createServer((req, res) => {
     send(res, 500, { error: 'Something went wrong reading the chain. Try again.' })
   })
 })
+
+await initStore()
 
 server.listen(port, () => {
   console.log(`[melo] api on :${port} (${mode} mode, loop ${loopMs / 1000}s, controls ${adminToken ? 'on' : 'off'}, cors origins ${allowedOrigins.length})`)

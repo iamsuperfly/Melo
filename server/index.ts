@@ -1,7 +1,7 @@
 import { createHash, timingSafeEqual } from 'node:crypto'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { formatUnits, isAddress, type Address } from 'viem'
-import { claimVoucher, client } from './chain'
+import { claimVoucher, client, depositToMargin } from './chain'
 import { getMarkets, getSnapshot, listMarketSummaries, loopRunning, recentReceipts, startLoop, stopLoop, tick } from './engine'
 import { adminToken, allowedOrigins, loopMs, mode, NETWORK, port, tradingAccount } from './env'
 import { getState, setState } from './store'
@@ -133,6 +133,19 @@ async function route(req: IncomingMessage, res: ServerResponse) {
       return send(res, 200, { hash: await claimVoucher(snap.market.marginBank as Address) })
     } catch (e) {
       throw new HttpError(400, e instanceof Error ? e.message.slice(0, 200) : 'Claim failed')
+    }
+  }
+  if (method === 'POST' && path === '/api/control/deposit') {
+    requireAdmin(req)
+    const body = (await readJson(req)) as { amount?: unknown }
+    if (body.amount !== undefined && (typeof body.amount !== 'number' || !Number.isFinite(body.amount) || body.amount <= 0)) {
+      throw new HttpError(400, 'amount must be a positive number')
+    }
+    const snap = await getSnapshot()
+    try {
+      return send(res, 200, await depositToMargin(snap.market.marginBank as Address, body.amount as number | undefined))
+    } catch (e) {
+      throw new HttpError(400, e instanceof Error ? e.message.slice(0, 200) : 'Deposit failed')
     }
   }
   throw new HttpError(404, 'Not found')

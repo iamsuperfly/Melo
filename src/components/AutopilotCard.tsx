@@ -13,7 +13,7 @@ const FIELDS: { key: keyof StrategyConfig; label: string; hint: string; step: nu
   { key: 'closeHealthBps', label: 'Close at health (bps)', hint: '12000 = 1.2x maintenance', step: 500 },
 ]
 
-type Action = 'toggle' | 'save' | 'tick' | 'claim' | null
+type Action = 'toggle' | 'save' | 'tick' | 'claim' | 'deposit' | null
 
 export function AutopilotCard({
   status,
@@ -65,6 +65,12 @@ export function AutopilotCard({
       return 'Paper USDso claimed'
     })
 
+  const deposit = () =>
+    run('deposit', async () => {
+      const r = await api.control(token, {}, '/api/control/deposit')
+      return `Deposited ${r.deposited ?? ''} USDso to margin`.replace('  ', ' ')
+    })
+
   return (
     <div className="card">
       <div className="flex items-center justify-between">
@@ -101,6 +107,11 @@ export function AutopilotCard({
         {status.mode === 'direct' && (
           <button type="button" className="btn btn-ghost" disabled={!canControl || busy !== null} onClick={() => void claim()}>
             {busy === 'claim' ? 'Claiming...' : 'Claim paper USDso'}
+          </button>
+        )}
+        {status.mode === 'direct' && (
+          <button type="button" className="btn btn-ghost" disabled={!canControl || busy !== null} onClick={() => void deposit()}>
+            {busy === 'deposit' ? 'Depositing...' : 'Deposit wallet USDso'}
           </button>
         )}
       </div>

@@ -1,6 +1,6 @@
 import { SOMNIA_HIDEKI_TESTNET_ADDRESSES, SomniaMarkets } from '@somnia-chain/markets-sdk'
 import { hidekiTestnet } from '@somnia-chain/markets-sdk/chains'
-import { createPublicClient, createWalletClient, http, parseAbi, zeroAddress, type Address, type Hex } from 'viem'
+import { createPublicClient, createWalletClient, http, parseAbi, parseUnits, zeroAddress, type Address, type Hex } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { botKey, mode, ownerAddress, NETWORK } from './env'
 
@@ -113,4 +113,25 @@ export async function claimVoucher(marginBank: Address): Promise<string> {
   if (!elig.eligible) throw new Error(`Not eligible: ${elig.reason}`)
   const res = await markets.trader.claimPerpVoucher({ marginBank })
   return res.hash
+}
+
+const erc20Abi = parseAbi(['function balanceOf(address) view returns (uint256)'])
+
+/** Move USDso from the bot wallet into its perps margin. Approves the bank first if needed. */
+export async function depositToMargin(marginBank: Address, amount?: number): Promise<{ hash: string; deposited: string }> {
+  if (mode !== 'direct') throw new Error('Deposits only apply when the bot trades its own account')
+  const account = markets.walletAddress
+  if (!account) throw new Error('No bot wallet')
+  const cfg = await client.getPerpSystemConfig(marginBank)
+  const balance = await publicClient.readContract({
+    address: cfg.collateralToken,
+    abi: erc20Abi,
+    functionName: 'balanceOf',
+    args: [account],
+  })
+  const want = amount === undefined ? balance : parseUnits(String(amount), 18)
+  const value = want > balance ? balance : want
+  if (value <= 0n) throw new Error('The bot wallet holds no USDso to deposit')
+  const res = await markets.trader.depositMargin({ marginBank, amount: value, collateral: cfg.collateralToken, gas: GAS })
+  return { hash: res.hash, deposited: (Number(value) / 1e18).toString() }
 }

@@ -133,7 +133,7 @@ export const api = {
   proof: (address?: string) =>
     request<Proof>(`/api/proof${address ? `?address=${encodeURIComponent(address)}` : ''}`),
   control: (token: string, body: unknown, path = '/api/control') =>
-    request<Status & { summary?: string; hash?: string }>(path, {
+    request<Status & { summary?: string; hash?: string; deposited?: string }>(path, {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
       body: JSON.stringify(body),

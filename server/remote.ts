@@ -7,9 +7,15 @@ const url = process.env.SUPABASE_URL?.trim().replace(/\/+$/, '') ?? ''
 const key = process.env.SUPABASE_SERVICE_KEY?.trim() ?? ''
 const enabled = url !== '' && key !== ''
 
+/**
+ * New secret keys (sb_secret_...) are not JWTs and go on the apikey header only.
+ * Legacy service_role keys are JWTs (eyJ...) and also take a bearer header.
+ */
+const isJwt = key.startsWith('eyJ')
+
 const headers = (extra?: Record<string, string>) => ({
   apikey: key,
-  authorization: `Bearer ${key}`,
+  ...(isJwt ? { authorization: `Bearer ${key}` } : {}),
   'content-type': 'application/json',
   ...extra,
 })

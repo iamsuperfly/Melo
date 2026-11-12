@@ -2,8 +2,6 @@
 
 Melo is a funding-aware perps terminal for dreamDEX on the Somnia Tokyo testnet. It watches funding rates, opens a position on the paying side, guards it against liquidation, and shows every order it places with its transaction hash.
 
-Built with [Arc Studio](https://studio.arc.io)
-
 Submitted to the dreamDEX Perps Builder Bounty, Track 2 (MVP).
 
 ## What it does

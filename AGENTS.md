@@ -1,7 +1,5 @@
 # Melo
 
-> Built with Arc Studio - money-powered apps in minutes
-
 Project memory for future agents.
 
 ## What This App Does

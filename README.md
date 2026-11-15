@@ -13,7 +13,7 @@
 
 Built for the **dreamDEX Perps Builder Bounty, Track 2 (MVP)**
 
-### ▶ [Live app](https://melo-trade.vercel.app) · [Proof page](https://melo-trade.vercel.app/proof) · [Source](https://github.com/iamsuperfly/Melo) · [dreamDEX perps docs](https://app.testnet.dreamdex.io/docs/developers/perps-testnet)
+### ▶ [Live app](https://melo-trade.vercel.app) · [Proof page](https://melo-trade.vercel.app/proof) · [Video walkthrough](https://youtu.be/N1nlHm7uWT0) · [Source](https://github.com/iamsuperfly/Melo) · [dreamDEX perps docs](https://app.testnet.dreamdex.io/docs/developers/perps-testnet)
 
 ---
 
@@ -114,6 +114,9 @@ Real orders placed by Melo on the Somnia Tokyo testnet:
 | 2026-11-15 08:32 | Sell 95.3 XRP (closes the long) | **Stop loss**: net -9.17% hit the -2% limit | [`0x80ea…a142`](https://explorer.testnet.somnia.network/tokyo/tx/0x80ea9a3887651ee48b08e7c1dab500d761649e320979020eaf225f195bd9a142) |
 | 2026-11-15 08:33 | Buy 0.00134 BTC (closes the short) | **Take profit**: net +15.78% reached the +2% target | [`0x2f21…242d`](https://explorer.testnet.somnia.network/tokyo/tx/0x2f2162ba3471f5305bdb44c0ea15de33f1927b912a76a5559ac4f5c53c75242d) |
 | 2026-11-15 08:42 | Buy 1.53 HYPE (opens a long) | **Autopilot**, funding -6.98 bps, shorts pay longs | [`0xb495…7320`](https://explorer.testnet.somnia.network/tokyo/tx/0xb495abe0cd82e0ad4cef9755269109b346c5dca39a5bcb71fb2a22251ad57320) |
+| 2026-11-15 09:03 | Sell 1.53 HYPE (closes the long) | **Autopilot take profit**: net +2.21% reached the +2% target | [`0x2ec0…0dca`](https://explorer.testnet.somnia.network/tokyo/tx/0x2ec0ee95d344e1ba0cf8d3315294c210f06bc2c63ee6f77135087229a4130dca) |
+
+Both HYPE orders were placed by the autopilot loop, with no manual order: the long at 08:42 and the take profit at 09:03.
 
 The first order was placed before order logging was set up, so the proof page lists it without the Melo tag. The stop loss realized a loss, which is shown here as it happened.
 
@@ -126,8 +129,7 @@ The live proof page re-reads fills from the exchange indexer: [melo-trade.vercel
 Posts about Melo that tag [@DreamDEXSomnia](https://x.com/DreamDEXSomnia):
 
 1. [Post 1](https://x.com/iamsuperflly/status/2121885472611774568)
-2. <!-- add link -->
-3. <!-- add link -->
+2. [Post 2](https://x.com/iamsuperflly/status/2121929138491552065)
 
 ---
 
@@ -213,11 +215,12 @@ Never put the bot key, admin token or Supabase key in a `VITE_` variable, becaus
 
 | Requirement | Status |
 |---|---|
-| MVP places real perps orders on Tokyo testnet | ✅ Five confirmed orders, [see the table above](#-evidence-of-live-orders) |
+| MVP places real perps orders on Tokyo testnet | ✅ Six confirmed orders, [see the table above](#-evidence-of-live-orders) |
 | README: what it does, who it is for, how to run | ✅ Sections above |
 | README: X posts section with 2 to 3 posts tagging @DreamDEXSomnia | See [X posts](#-x-posts) |
 | Public GitHub repository | ✅ [iamsuperfly/Melo](https://github.com/iamsuperfly/Melo) |
 | Evidence: transaction hashes, repo, demo | ✅ Hashes above, live app, live proof page |
+| Video walkthrough | ✅ [YouTube](https://youtu.be/N1nlHm7uWT0) |
 | Official SDK and the Link a Bot flow | ✅ `@somnia-chain/markets-sdk`, linked-wallet mode supported |
 | Deterministic risk logic, tested | ✅ 29 unit tests |
 | Runs after the tab closes | ✅ Server-side autopilot, with a cron ping to keep the host awake |

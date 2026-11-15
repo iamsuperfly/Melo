@@ -74,7 +74,7 @@ async function proof(address: string | null) {
     }
   })
   return {
-    account: target as Address,
+    account: target,
     explorer: NETWORK.explorer,
     fills,
     receipts: receipts.filter((r) => r.status === 'confirmed' || r.status === 'reverted').slice(0, 50),
@@ -143,7 +143,7 @@ async function route(req: IncomingMessage, res: ServerResponse) {
     }
     const snap = await getSnapshot()
     try {
-      return send(res, 200, await depositToMargin(snap.market.marginBank as Address, body.amount as number | undefined))
+      return send(res, 200, await depositToMargin(snap.market.marginBank as Address, body.amount))
     } catch (e) {
       throw new HttpError(400, e instanceof Error ? e.message.slice(0, 200) : 'Deposit failed')
     }

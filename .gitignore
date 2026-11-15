@@ -7,3 +7,5 @@ dist/
 *.log
 .circle/
 recovery_file*
+arc-studio-plans/
+*.jsonl

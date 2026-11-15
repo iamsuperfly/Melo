@@ -133,7 +133,7 @@ interface MarketSummary {
 export async function listMarketSummaries(): Promise<MarketSummary[]> {
   if (summaryCache && Date.now() - summaryCache.at < 20_000) return summaryCache.list
   const rows = (await getMarkets()).filter((r) => r.baseSymbol)
-  const reads = await Promise.allSettled(rows.map((r) => client.getPerpState(r.poolAddress as Address)))
+  const reads = await Promise.allSettled(rows.map((r) => client.getPerpState(r.poolAddress)))
   const list: MarketSummary[] = []
   rows.forEach((r, i) => {
     const read = reads[i]
@@ -201,8 +201,8 @@ async function buildPlan(): Promise<Plan> {
   const m = rows.find((r) => r.baseSymbol === st.symbol) ?? rows[0]
   if (!m) throw new Error('No tradeable perp markets found')
 
-  const pool = m.poolAddress as Address
-  const marginBank = m.marginBank as Address
+  const pool = m.poolAddress
+  const marginBank = m.marginBank
   const chainState = await client.getPerpState(pool)
   const account = tradingAccount
 
@@ -411,7 +411,7 @@ function recordSkip(snapshot: Snapshot, detail: string) {
 async function execute(snapshot: Snapshot, o: PlannedOrder): Promise<string> {
   const m = (await getMarkets()).find((r) => r.baseSymbol === snapshot.market.symbol)
   if (!m) return 'Market disappeared'
-  const res = await placeIoc({ pool: m.poolAddress as Address, isBid: o.isBid, price: o.price, quantity: o.quantity })
+  const res = await placeIoc({ pool: m.poolAddress, isBid: o.isBid, price: o.price, quantity: o.quantity })
   addReceipt({
     kind: o.kind,
     symbol: snapshot.market.symbol,

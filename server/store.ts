@@ -76,7 +76,7 @@ export async function initStore(): Promise<void> {
   }
   try {
     const saved = await remote.loadState()
-    if (saved) state = normalize(saved as Partial<PersistedState>)
+    if (saved) state = normalize(saved)
     else await remote.saveState(state)
     const rows = await remote.loadReceipts(MAX_RECEIPTS)
     receipts = rows as Receipt[]

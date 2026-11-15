@@ -28,7 +28,7 @@ function HealthBar({ status }: { status: Status }) {
           {h === null ? 'No position' : `${h.toFixed(2)}x maintenance`}
         </span>
       </div>
-      <div className="relative mt-2 h-3 rounded-full" style={{ background: 'rgba(0,0,0,0.3)' }}>
+      <div className="relative mt-2 h-3 rounded-full" style={{ background: 'var(--track)' }}>
         <div className="h-3 rounded-full" style={{ width: h === null ? '0%' : pct(h), background: tone, transition: 'width 0.4s' }} />
         <span className="absolute -top-1 h-5 w-px" style={{ left: pct(close), background: 'var(--danger)' }} title="Close line" />
         <span className="absolute -top-1 h-5 w-px" style={{ left: pct(trim), background: 'var(--warn)' }} title="Trim line" />
@@ -68,6 +68,11 @@ export function PositionCard({ status }: { status: Status }) {
               />
               <Row label="Entry" value={p.side === 'flat' ? '-' : price(p.entry)} />
               <Row label="Notional" value={p.side === 'flat' ? '-' : usd(p.notional, true)} />
+              <Row
+                label="Net PnL vs exits"
+                value={p.pnlPct === null ? '-' : `${signed(p.pnlPct)}% (TP +${status.config.takeProfitPct}% / SL -${status.config.stopLossPct}%)`}
+                tone={p.pnlPct === null ? undefined : p.pnlPct >= 0 ? 'var(--success)' : 'var(--danger)'}
+              />
               <Row
                 label="Unrealized PnL"
                 value={p.unrealizedPnl === null ? '-' : usd(p.unrealizedPnl)}

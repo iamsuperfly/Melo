@@ -8,6 +8,7 @@ Submitted to the dreamDEX Perps Builder Bounty, Track 2 (MVP).
 
 - Shows live mark price, funding rate and annualized funding for every tradeable perp market, sorted by the biggest funding edge.
 - Autopilot opens a position on the side that collects funding when the rate is above your entry line, and closes it when the edge fades or flips.
+- Take profit and stop loss close a position when its net result (price move minus funding paid) reaches +2% or -2% of its size. Both are adjustable, and 0 turns one off. After either exit the market rests for 60 minutes before Melo reopens it.
 - A liquidation shield trims the position, then closes it, before the exchange would liquidate it. You set both lines.
 - Tells you plainly whether the next order is Ready, a Smaller size, or Cannot execute, checked against your live margin.
 - Keeps running on the server after you close the tab.
@@ -19,7 +20,7 @@ Traders who want a simple, observable way to run a funding-harvest strategy with
 
 ## Safety
 
-- The bot key can place, cancel and reduce orders for a linked wallet. It cannot withdraw or send funds.
+- When the bot is linked to your own wallet, the bot key can place, cancel and reduce orders for that wallet but cannot withdraw or send funds. If you run it on its own wallet instead, that key controls that wallet's funds, so keep only test funds there.
 - The key lives only in the server's `.env`. It is never sent to the browser.
 - Autopilot controls need an admin token. Anyone can view the terminal and proof page, only the token holder can start, stop or change settings.
 - This is testnet only. Funding harvesting carries real market risk on mainnet and this project does not touch mainnet.
@@ -104,6 +105,10 @@ alter table melo_receipts enable row level security;
 ```
 
 The same SQL is in `supabase/schema.sql`. Row level security stays on with no public policies, so only the server's service key can read or write these tables.
+
+### Keeping the server awake
+
+Free hosts sleep after a few idle minutes, which pauses autopilot. Use a free pinger such as [cron-job.org](https://cron-job.org/en/): create a job that calls `GET <your server URL>/api/health` every 5 minutes. A paid instance is the reliable choice.
 
 ## X posts
 

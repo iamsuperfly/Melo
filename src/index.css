@@ -3,22 +3,23 @@
 @tailwind utilities;
 
 :root {
-  --bg: #0d1b2f;
-  --bg-gradient: linear-gradient(180deg, #0d1b2f 0%, #0d1b2f 58%, #122d45 100%);
-  --surface: rgba(255, 255, 255, 0.07);
-  --surface-strong: rgba(255, 255, 255, 0.11);
-  --surface-muted: #1f2f44;
-  --ink: #f9faf3;
-  --ink-2: #e3ecf9;
-  --muted: #cbd5e1;
-  --subtle: #94a3b8;
-  --border: rgba(255, 255, 255, 0.12);
-  --border-strong: rgba(203, 219, 242, 0.55);
-  --accent: #acc6e9;
-  --accent-hover: #cbdbf2;
-  --success: #8dd89f;
-  --danger: #e86d7a;
-  --warn: #e8c46d;
+  --bg: #dde8df;
+  --surface: rgba(255, 255, 255, 0.55);
+  --surface-strong: rgba(255, 255, 255, 0.82);
+  --surface-muted: #cddad0;
+  --ink: #183d32;
+  --ink-2: #254d41;
+  --muted: #3b5a4d;
+  --subtle: #4f6b5f;
+  --border: rgba(24, 61, 50, 0.16);
+  --border-strong: rgba(24, 61, 50, 0.5);
+  --accent: #183d32;
+  --accent-hover: #245246;
+  --on-accent: #eef4ef;
+  --track: rgba(24, 61, 50, 0.14);
+  --success: #17703f;
+  --danger: #b0243d;
+  --warn: #8a5f00;
 }
 
 * {
@@ -30,8 +31,7 @@ body {
   min-height: 100dvh;
   font-family: 'DM Sans', sans-serif;
   color: var(--ink);
-  background: var(--bg) var(--bg-gradient);
-  background-attachment: fixed;
+  background: var(--bg);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -53,11 +53,10 @@ body {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 20px;
-    backdrop-filter: blur(14px);
     padding: 20px;
   }
   .inner {
-    background: rgba(0, 0, 0, 0.18);
+    background: rgba(24, 61, 50, 0.05);
     border: 1px solid var(--border);
     border-radius: 14px;
   }
@@ -95,7 +94,7 @@ body {
   }
   .btn-primary {
     background: var(--accent);
-    color: #0d1b2f;
+    color: var(--on-accent);
     border: 1px solid transparent;
   }
   .btn-primary:hover:not(:disabled) {
@@ -115,9 +114,12 @@ body {
     padding: 0 12px;
     border-radius: 12px;
     border: 1px solid var(--border);
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.7);
     color: var(--ink);
     font-size: 14px;
+  }
+  .field::placeholder {
+    color: var(--subtle);
   }
   .field:focus-visible,
   .btn:focus-visible {

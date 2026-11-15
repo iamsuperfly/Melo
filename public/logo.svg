@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="1000" height="1000" role="img" aria-label="MELO">
+  <title>MELO</title>
+  <rect width="1000" height="1000" fill="#DDE8DF"/>
+  <g fill="#183D32" fill-rule="evenodd">
+    <path d="M178.5 580V420H222L263.5 490L305 420H348.5V580H312.5V484L277 545H250L214.5 484V580Z"/>
+    <path d="M384.5 420H494.5V452H420.5V484H482V516H420.5V548H494.5V580H384.5Z"/>
+    <path d="M530.5 420H566.5V548H635.5V580H530.5Z"/>
+    <path d="M671.5 500a75 80 0 1 0 150 0a75 80 0 1 0-150 0ZM707.5 500a39 48 0 1 0 78 0a39 48 0 1 0-78 0Z"/>
+  </g>
+</svg>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="64" height="64" role="img" aria-label="MELO">
+  <title>MELO</title>
+  <rect width="1000" height="1000" fill="#DDE8DF"/>
+  <path fill="#183D32" transform="translate(500 500) scale(2.6) translate(-263.5 -500)" d="M178.5 580V420H222L263.5 490L305 420H348.5V580H312.5V484L277 545H250L214.5 484V580Z"/>
+</svg>

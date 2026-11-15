@@ -50,6 +50,8 @@ export interface Snapshot {
     unrealizedPnl: string | null
     accruedFunding: string | null
     liqPrice: string | null
+    /** Net PnL (price move minus funding paid) as a percent of notional. */
+    pnlPct: number | null
   }
   margin: null | {
     equity: string
@@ -79,40 +81,90 @@ const fmt = (v: bigint, d: number) => formatUnits(v, d)
 
 let marketsCache: { at: number; rows: PerpMarket[] } | null = null
 
+/**
+ * Tradeable perp markets. The indexer can lag or drop a market that is still live,
+ * so the factory on chain is the source of truth and the indexer only fills in history.
+ */
 export async function getMarkets(): Promise<PerpMarket[]> {
   if (marketsCache && Date.now() - marketsCache.at < 30_000) return marketsCache.rows
-  let rows = await client.listPerpMarkets()
+  const indexed = await client.listPerpMarkets()
+  let rows = indexed
   try {
-    const first = rows[0]
+    const first = indexed[0]
     if (first) {
       const cfg = await client.getPerpSystemConfig(first.marginBank)
-      const ok = new Set((await client.listTradeablePerpPools({ factory: cfg.perpPoolFactory })).map((a) => a.toLowerCase()))
-      rows = rows.filter((r) => ok.has(r.poolAddress.toLowerCase()))
+      const statuses = await client.listPerpPoolStatuses({ factory: cfg.perpPoolFactory })
+      const live = statuses.filter((st) => st.tradeable)
+      const liveSet = new Set(live.map((st) => st.pool.toLowerCase()))
+      const known = new Set(indexed.map((r) => r.poolAddress.toLowerCase()))
+      rows = indexed.filter((r) => liveSet.has(r.poolAddress.toLowerCase()))
+      const missing = live.filter((st) => !known.has(st.pool.toLowerCase()))
+      const built = await Promise.allSettled(
+        missing.map((status) =>
+          client.readPerpMarketFromChain({
+            status,
+            collateralToken: cfg.collateralToken,
+            collateralDecimals: USD,
+            collateralSymbol: 'USDso',
+            factory: cfg.perpPoolFactory,
+          }),
+        ),
+      )
+      for (const b of built) if (b.status === 'fulfilled') rows.push(b.value)
     }
   } catch (e) {
-    console.error('[melo] could not filter to tradeable markets:', e instanceof Error ? e.message : e)
+    console.error('[melo] could not read markets from chain, using the indexer list:', e instanceof Error ? e.message : e)
   }
   marketsCache = { at: Date.now(), rows }
   return rows
 }
 
-export async function listMarketSummaries() {
-  const rows = await getMarkets()
-  return rows
-    .filter((r) => r.baseSymbol)
-    .map((r) => {
-      const window = r.fundingWindowSec ?? 28_800
-      const rate = BigInt(r.fundingRate ?? '0')
-      return {
-        symbol: r.baseSymbol as string,
-        pool: r.poolAddress,
-        mark: r.markPrice ? fmt(BigInt(r.markPrice), r.quoteDecimals) : null,
-        fundingBps8h: fundingBps8h(rate),
-        aprPct: annualizedFundingRate(rate, window) * 100,
-        maxLeverage: Math.round(10_000 / r.initialMarginBps),
-      }
+let summaryCache: { at: number; list: MarketSummary[] } | null = null
+
+interface MarketSummary {
+  symbol: string
+  pool: string
+  mark: string | null
+  fundingBps8h: number
+  aprPct: number
+  maxLeverage: number
+}
+
+export async function listMarketSummaries(): Promise<MarketSummary[]> {
+  if (summaryCache && Date.now() - summaryCache.at < 20_000) return summaryCache.list
+  const rows = (await getMarkets()).filter((r) => r.baseSymbol)
+  const reads = await Promise.allSettled(rows.map((r) => client.getPerpState(r.poolAddress as Address)))
+  const list: MarketSummary[] = []
+  rows.forEach((r, i) => {
+    const read = reads[i]
+    if (!read || read.status !== 'fulfilled') return
+    const st = read.value
+    list.push({
+      symbol: r.baseSymbol as string,
+      pool: r.poolAddress,
+      mark: st.markPriceOk ? fmt(st.markPrice, r.quoteDecimals) : null,
+      fundingBps8h: fundingBps8h(st.fundingRate),
+      aprPct: annualizedFundingRate(st.fundingRate, st.fundingWindowSec) * 100,
+      maxLeverage: Math.round(10_000 / r.initialMarginBps),
     })
-    .sort((a, b) => Math.abs(b.fundingBps8h) - Math.abs(a.fundingBps8h))
+  })
+  list.sort((a, b) => Math.abs(b.fundingBps8h) - Math.abs(a.fundingBps8h))
+  summaryCache = { at: Date.now(), list }
+  return list
+}
+
+/** True while a confirmed take profit or stop loss on this market is inside the cool-down window. */
+function recentlyStopped(symbol: string, cooldownMin: number): boolean {
+  if (cooldownMin <= 0) return false
+  const since = Date.now() - cooldownMin * 60_000
+  return getReceipts().some(
+    (r) =>
+      r.symbol === symbol &&
+      r.kind === 'close' &&
+      r.status === 'confirmed' &&
+      r.ts >= since &&
+      (r.reason.startsWith('Take profit') || r.reason.startsWith('Stop loss')),
+  )
 }
 
 // ---------- snapshot ----------
@@ -185,6 +237,7 @@ async function buildPlan(): Promise<Plan> {
     let accruedFunding: string | null = null
     let notional = '0'
     let liqPrice: string | null = null
+    let pnlPctValue: number | null = null
     if (size !== 0n) {
       try {
         const a = await client.getPerpPositionAnalytics({ marginBank, pool, account })
@@ -192,6 +245,11 @@ async function buildPlan(): Promise<Plan> {
           unrealizedPnl = fmt(a.unrealizedPnl, USD)
           accruedFunding = fmt(a.accruedFunding, USD)
           notional = fmt(a.notional, USD)
+          if (a.notional > 0n) {
+            // accruedFunding is positive when the account owes funding.
+            const net = a.unrealizedPnl - a.accruedFunding
+            pnlPctValue = Number((net * 1_000_000n) / a.notional) / 10_000
+          }
         }
         const lp = await client.getLiquidationPrice({ marginBank, pool, account })
         liqPrice = lp === null ? null : fmt(lp, USD)
@@ -207,6 +265,7 @@ async function buildPlan(): Promise<Plan> {
       unrealizedPnl,
       accruedFunding,
       liqPrice,
+      pnlPct: pnlPctValue,
     }
   }
 
@@ -216,6 +275,8 @@ async function buildPlan(): Promise<Plan> {
     equity,
     mmReq,
     markOk: chainState.markPriceOk,
+    pnlPct: position?.pnlPct ?? null,
+    entryBlocked: recentlyStopped(m.baseSymbol ?? st.symbol, st.config.reentryCooldownMin),
     cfg: st.config,
   })
 
@@ -256,12 +317,14 @@ async function buildPlan(): Promise<Plan> {
     const quantity = reduceQuantity(size, fraction, lot, minQty)
     const price = iocPrice(mark, isBid, st.config.slippageBps, tick)
     const shield = decision.reason.startsWith('Shield')
+    const stop = decision.reason.startsWith('Stop loss')
+    const tp = decision.reason.startsWith('Take profit')
     if (quantity <= 0n || !chainState.markPriceOk) {
       signal = { kind: 'blocked', title: 'Cannot execute', detail: chainState.markPriceOk ? 'Position is below one lot' : 'Mark price feed is stale' }
     } else {
       signal = {
-        kind: shield ? 'guard' : 'ready',
-        title: shield ? 'Shield active' : 'Ready',
+        kind: shield || stop ? 'guard' : 'ready',
+        title: shield ? 'Shield active' : stop ? 'Stop loss hit' : tp ? 'Take profit hit' : 'Ready',
         detail: decision.reason,
         quantity: fmt(quantity, m.baseDecimals),
       }

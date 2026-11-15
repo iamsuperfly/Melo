@@ -6,6 +6,9 @@ export interface StrategyConfig {
   trimHealthBps: number
   closeHealthBps: number
   trimFraction: number
+  takeProfitPct: number
+  stopLossPct: number
+  reentryCooldownMin: number
 }
 
 export type Decision =
@@ -51,6 +54,7 @@ export interface Status {
     unrealizedPnl: string | null
     accruedFunding: string | null
     liqPrice: string | null
+    pnlPct: number | null
   }
   margin: null | {
     equity: string

@@ -1,4 +1,5 @@
 import type { Status } from '@/lib/api'
+import { Wordmark } from './Wordmark'
 
 const MODE_LABEL: Record<Status['mode'], string> = {
   linked: 'Linked wallet',
@@ -34,11 +35,7 @@ export function Header({
   return (
     <header className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex items-center gap-3">
-        <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden>
-          <rect width="30" height="30" rx="9" fill="var(--accent)" />
-          <path d="M7 21V9l8 8 8-8v12" fill="none" stroke="#0d1b2f" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        <span className="display text-2xl font-semibold">Melo</span>
+        <Wordmark height={20} className="text-[var(--ink)]" />
         <nav className="ml-2 flex gap-1" aria-label="Main">
           {link('/', 'Terminal', active === 'terminal')}
           {link('/proof', 'Proof', active === 'proof')}

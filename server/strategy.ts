@@ -18,6 +18,12 @@ export interface StrategyConfig {
   closeHealthBps: number
   /** Share of the position removed on a trim (0 to 1). */
   trimFraction: number
+  /** Close when net PnL (price move minus funding paid) reaches this share of the position, in percent. 0 turns it off. */
+  takeProfitPct: number
+  /** Close when net loss reaches this share of the position, in percent. 0 turns it off. */
+  stopLossPct: number
+  /** After a take profit or stop loss, wait this many minutes before opening that market again. */
+  reentryCooldownMin: number
 }
 
 export const DEFAULT_CONFIG: StrategyConfig = {
@@ -28,6 +34,9 @@ export const DEFAULT_CONFIG: StrategyConfig = {
   trimHealthBps: 15000,
   closeHealthBps: 12000,
   trimFraction: 0.5,
+  takeProfitPct: 2,
+  stopLossPct: 2,
+  reentryCooldownMin: 60,
 }
 
 export const LIMITS = {
@@ -61,6 +70,10 @@ export interface DecideInput {
   equity: bigint
   mmReq: bigint
   markOk: boolean
+  /** Net PnL as a percent of position notional (price move minus funding paid). Null when unknown or flat. */
+  pnlPct?: number | null
+  /** True while a recent take profit or stop loss blocks re-entry on this market. */
+  entryBlocked?: boolean
   cfg: StrategyConfig
 }
 
@@ -81,11 +94,24 @@ export function decide(i: DecideInput): Decision {
 
   if (!i.markOk) return { action: 'hold', reason: 'Mark price feed is stale' }
 
-  // 2. Funding harvest. Positive funding means longs pay shorts, so sit short.
+  // 2. Stop loss and take profit on net PnL. Stop loss is checked first so a loss never hides behind a gain.
+  if (held && i.pnlPct !== null && i.pnlPct !== undefined) {
+    if (cfg.stopLossPct > 0 && i.pnlPct <= -cfg.stopLossPct) {
+      return { action: 'close', reason: `Stop loss: net ${i.pnlPct.toFixed(2)}% hit the -${cfg.stopLossPct}% limit` }
+    }
+    if (cfg.takeProfitPct > 0 && i.pnlPct >= cfg.takeProfitPct) {
+      return { action: 'close', reason: `Take profit: net +${i.pnlPct.toFixed(2)}% reached the +${cfg.takeProfitPct}% target` }
+    }
+  }
+
+  // 3. Funding harvest. Positive funding means longs pay shorts, so sit short.
   const fb = fundingBps8h(i.fundingRate)
   const abs = Math.abs(fb)
 
   if (!held) {
+    if (i.entryBlocked) {
+      return { action: 'hold', reason: `Cooling down for ${cfg.reentryCooldownMin} min after a take profit or stop loss` }
+    }
     if (abs >= cfg.entryBps8h) {
       const isBid = fb < 0
       return {
@@ -176,6 +202,9 @@ export function parseConfig(input: unknown, base: StrategyConfig): StrategyConfi
   num('trimHealthBps', 10_001, 100_000)
   num('closeHealthBps', 10_001, 100_000)
   num('trimFraction', 0.05, 1)
+  num('takeProfitPct', 0, 100)
+  num('stopLossPct', 0, 100)
+  num('reentryCooldownMin', 0, 1440)
   if (next.exitBps8h >= next.entryBps8h) throw new Error('exitBps8h must be lower than entryBps8h')
   if (next.closeHealthBps >= next.trimHealthBps) throw new Error('closeHealthBps must be lower than trimHealthBps')
   return next

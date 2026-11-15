@@ -75,6 +75,46 @@ describe('decide: liquidation shield', () => {
   })
 })
 
+describe('decide: take profit and stop loss', () => {
+  const held = { ...base, positionSize: -5n * E18, mmReq: 10n * E18, equity: 1000n * E18, fundingRate: E18 / 1000n }
+  test('takes profit at the target', () => {
+    const d = decide({ ...held, pnlPct: 2.1 })
+    expect(d.action).toBe('close')
+    expect(d.action === 'close' && d.reason.startsWith('Take profit')).toBe(true)
+  })
+  test('stops out at the limit', () => {
+    const d = decide({ ...held, pnlPct: -2.5 })
+    expect(d.action).toBe('close')
+    expect(d.action === 'close' && d.reason.startsWith('Stop loss')).toBe(true)
+  })
+  test('holds between the two lines', () => {
+    expect(decide({ ...held, pnlPct: 0.8 }).action).toBe('hold')
+    expect(decide({ ...held, pnlPct: -1.2 }).action).toBe('hold')
+  })
+  test('zero turns each exit off', () => {
+    const off = { ...cfg, takeProfitPct: 0, stopLossPct: 0 }
+    expect(decide({ ...held, cfg: off, pnlPct: 50 }).action).toBe('hold')
+    expect(decide({ ...held, cfg: off, pnlPct: -50 }).action).toBe('hold')
+  })
+  test('unknown pnl never triggers an exit', () => {
+    expect(decide({ ...held, pnlPct: null }).action).toBe('hold')
+  })
+  test('shield still wins over take profit', () => {
+    const d = decide({ ...held, equity: 110n * E18, mmReq: 100n * E18, pnlPct: 5 })
+    expect(d.action === 'close' && d.reason.startsWith('Shield')).toBe(true)
+  })
+  test('cool-down blocks re-entry', () => {
+    const d = decide({ ...base, fundingRate: E18 / 1000n, entryBlocked: true })
+    expect(d.action).toBe('hold')
+    expect(decide({ ...base, fundingRate: E18 / 1000n, entryBlocked: false }).action).toBe('open')
+  })
+  test('config accepts and rejects the new fields', () => {
+    expect(parseConfig({ takeProfitPct: 3, stopLossPct: 1, reentryCooldownMin: 30 }, cfg).stopLossPct).toBe(1)
+    expect(() => parseConfig({ stopLossPct: -1 }, cfg)).toThrow()
+    expect(() => parseConfig({ reentryCooldownMin: 99999 }, cfg)).toThrow()
+  })
+})
+
 describe('sizing', () => {
   test('quantityForNotional aligns down to the lot grid', () => {
     // 100 USDso at 50,000 per BTC with 8 decimals = 0.002 BTC = 200_000 raw, lot 1_000
